@@ -925,7 +925,7 @@ if __name__ == "__main__":
 
         # === Ablation: FineWeb vs DCLM pretrain datasets ===
         pretrain_ablation = [
-            ("HuggingFaceFW/fineweb", "fineweb"),
+            # ("HuggingFaceFW/fineweb", "fineweb"),  # skip — already have wandb run
             ("Zyphra/dclm-dedup", "dclm"),
         ]
 
