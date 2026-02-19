@@ -21,11 +21,11 @@ dependencies = [
     "pre-commit",
     "ray[default]",
     "tensordict>=0.8.0,<=0.9.1,!=0.9.0",
-    "torch==2.7.1",
-    "flash-attn",
+    # torch, flash-attn, and vllm are NOT pinned here.
+    # Install them separately — see setup_5090.sh for Blackwell (sm_120) GPUs,
+    # or use: uv pip install torch flash-attn vllm
     "torchdata",
     "transformers==4.55.2",
-    "vllm==0.10.0",
     "einops==0.8.1",
     "wandb==0.21.1",
     "packaging>=20.0",
@@ -54,6 +54,14 @@ dependencies = [
     "huggingface-hub",
     "rapidfuzz",
     "hf_transfer",
+]
+
+[project.optional-dependencies]
+# Original pinned versions for Ampere/Hopper GPUs (A100, H100)
+cuda121 = [
+    "torch==2.7.1",
+    "flash-attn",
+    "vllm==0.10.0",
 ]
 
 [build-system]
