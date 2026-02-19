@@ -605,6 +605,7 @@ def build_loader_groups(
     save_acts: bool,
     classification_datasets: dict[str, dict[str, Any]],
     model_kwargs: dict[str, Any],
+    pretrain_dataset: str = "HuggingFaceFW/fineweb",
 ) -> dict[str, list[ActDatasetLoader]]:
     DEBUG = False
     num_datapoints = 100_000
@@ -621,6 +622,7 @@ def build_loader_groups(
             PastLensDatasetConfig(
                 max_k_activations=1,
                 max_k_tokens=50,
+                pretrain_dataset=pretrain_dataset,
             ),
             num_train=num_datapoints,
             num_test=0,
@@ -637,6 +639,7 @@ def build_loader_groups(
             PastLensDatasetConfig(
                 max_k_activations=50,
                 max_k_tokens=50,
+                pretrain_dataset=pretrain_dataset,
             ),
             num_train=num_datapoints,
             num_test=0,
@@ -920,36 +923,35 @@ if __name__ == "__main__":
 
         gradient_accumulation_steps = 1
 
-        # Build loader groups (single + multi variants)
-        loader_groups = build_loader_groups(
-            model_name=model_name,
-            layer_percents=layer_percents,
-            act_collection_batch_size=train_batch_size,
-            save_acts=save_acts,
-            classification_datasets=classification_datasets,
-            model_kwargs=model_kwargs,
-        )
-
-        classification_dataset_loaders = loader_groups["classification_loaders"]
-        past_lens_loaders = loader_groups["past_lens_loaders"]
-        sae_dataset_loaders = loader_groups["sae_loaders"]
-        sae_explanation_dataset_loaders = loader_groups["sae_explanation_loaders"]
-        latentqa_loaders = loader_groups["latentqa_loaders"]
-
-        iterations = [
-            # Default dataset mixture
-            # Set load_lora_path to checkpoint path to continue training
-            {
-                "load_lora_path": None,
-                "dataset_loaders": latentqa_loaders + classification_dataset_loaders + past_lens_loaders,
-                "wandb_suffix": f"_latentqa_cls_past_lens_{model_name_str}",
-            },
-            # {
-            #     "load_lora_path": None,
-            #     "dataset_loaders": latentqa_loaders,
-            #     "wandb_suffix": f"_latentqa_only_{model_name_str}",
-            # },
+        # === Ablation: FineWeb vs DCLM pretrain datasets ===
+        pretrain_ablation = [
+            ("HuggingFaceFW/fineweb", "fineweb"),
+            ("mlfoundations/dclm-baseline-1.0", "dclm"),
         ]
+
+        iterations = []
+        for pretrain_ds, pretrain_label in pretrain_ablation:
+            loader_groups = build_loader_groups(
+                model_name=model_name,
+                layer_percents=layer_percents,
+                act_collection_batch_size=train_batch_size,
+                save_acts=save_acts,
+                classification_datasets=classification_datasets,
+                model_kwargs=model_kwargs,
+                pretrain_dataset=pretrain_ds,
+            )
+
+            classification_dataset_loaders = loader_groups["classification_loaders"]
+            past_lens_loaders = loader_groups["past_lens_loaders"]
+            latentqa_loaders = loader_groups["latentqa_loaders"]
+
+            iterations.append(
+                {
+                    "load_lora_path": None,
+                    "dataset_loaders": latentqa_loaders + classification_dataset_loaders + past_lens_loaders,
+                    "wandb_suffix": f"_latentqa_cls_past_lens_{pretrain_label}_{model_name_str}",
+                },
+            )
 
         for hyperparam_override in iterations:
             loop_dataset_loaders = hyperparam_override.pop("dataset_loaders")

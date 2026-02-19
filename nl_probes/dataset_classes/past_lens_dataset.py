@@ -29,6 +29,7 @@ class PastLensDatasetConfig(BaseDatasetConfig):
     max_k_activations: int = 20
     max_length: int = 512
     directions: list[str] = field(default_factory=lambda: ["past", "future"])
+    pretrain_dataset: str = "HuggingFaceFW/fineweb"
 
 
 class PastLensDatasetLoader(ActDatasetLoader):
@@ -53,7 +54,7 @@ class PastLensDatasetLoader(ActDatasetLoader):
 
     def create_dataset(self) -> None:
         tokenizer = load_tokenizer(self.dataset_config.model_name)
-        dataset = hf_mixed_dataset_to_generator(tokenizer)
+        dataset = hf_mixed_dataset_to_generator(tokenizer, pretrain_dataset=self.dataset_params.pretrain_dataset)
 
         dtype = torch.bfloat16
 
